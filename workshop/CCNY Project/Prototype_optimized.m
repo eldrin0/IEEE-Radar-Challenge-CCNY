@@ -1,4 +1,4 @@
-cleanupAntenna(rx,tx,bf,bf_TDD);
+%cleanupAntenna(rx,tx,bf,bf_TDD);
 
 clear;
 close all;
