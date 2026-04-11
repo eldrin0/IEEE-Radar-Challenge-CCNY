@@ -31,26 +31,21 @@ rdFiltered = phased.RangeDopplerResponse('DopplerOutput', 'Speed', 'OperatingFre
     'SampleRate', fs, 'RangeMethod', 'FFT', 'SweepSlope', sweepSlope, 'PRFSource', 'Property', 'PRF', prf);
 
 scopeRaw = phased.RangeDopplerScope('IQDataInput', false, 'Name', '1. Raw Response', 'Position', [10 510 500 400]);
-%scopeMTI = phased.RangeDopplerScope('IQDataInput', false, 'Name', '2. MTI Filtered', 'Position', [520 510 500 400]);
+scopeMTI = phased.RangeDopplerScope('IQDataInput', false, 'Name', '2. MTI Filtered', 'Position', [520 510 500 400]);
 %scopeCFAR = phased.RangeDopplerScope('IQDataInput', false, 'Name', '3. CFAR Detections', 'Position', [520 50 500 400]);
 
 captureTransmitWaveform(rx,tx,bf);
 
-outputFolder = 'C:\Users\eldri\Downloads\NewDataSet\Moving_Away_Radar_4m';
-if ~exist(outputFolder, 'dir')
-    mkdir(outputFolder);
-end
+
 frameIdx = 1;
 t = tic;
 while toc(t) < tCapture
     data = captureTransmitWaveform(rx,tx,bf);
     data = arrangePulseData(data,rx,bf,bf_TDD);
     
-    fname = sprintf('data_frame_%04d.mat', frameIdx);
-    fullPath = fullfile(outputFolder, fname);
+   
     
     rawData = data;
-    save(fullPath, 'rawData');
     
     frameIdx = frameIdx + 1;
     % 1. Raw Scope
@@ -66,8 +61,6 @@ while toc(t) < tCapture
     maskMTI = rGridMTI >= minRange & rGridMTI <= maxRange;
     magnitudeMTI = abs(respMTI(maskMTI, :));
     %scopeMTI(magnitudeMTI, rGridMTI(maskMTI), sGridMTI);
-    
-    
     
     % 3. CFAR Scope
     [detMap, noiseMap] = apply_cfar(magnitudeMTI, 2, 2, 10, 10, 1e-4);
