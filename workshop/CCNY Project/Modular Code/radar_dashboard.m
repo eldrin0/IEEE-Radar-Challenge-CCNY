@@ -29,7 +29,7 @@ function handles = setup_ui()
     % --- 3. Alert System Setup ---
     hold(handles.axTarget, 'on');
     handles.hSquare = rectangle('Parent', handles.axTarget, 'Position', [0.1, 0.25, 0.8, 0.55], 'Curvature', [0.1, 0.1], 'FaceColor', [0.8 0.8 0.8], 'LineWidth', 2);
-    handles.hText = text(handles.axTarget, 0.5, 0.1, 'Searching...', 'HorizontalAlignment', 'center',' FontSize', 14, 'FontWeight', 'bold');
+    handles.hText = text(handles.axTarget, 0.5, 0.1, 'Searching...', 'HorizontalAlignment', 'center','FontSize', 14, 'FontWeight', 'bold');
     set(handles.axTarget, 'XTick', [], 'YTick', [], 'XColor', 'none', 'YColor', 'none');
     axis(handles.axTarget, [0 1 0 1]);
     

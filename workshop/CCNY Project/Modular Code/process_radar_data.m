@@ -14,6 +14,7 @@ function [targets, detMapMasked, magnitudeMTIMasked] = process_radar_data(data, 
     magnitudeMTIMasked = magnitudeMTI_Full(maskRange, :);
     
     % 4. DBSCAN Clustering
+    targets = [];
     [row, col] = find(detMapMasked > 0);
     if ~isempty(row)
         idx = dbscan([row, col], 5, 1); % min_pts=1 for high sensitivity
