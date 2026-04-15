@@ -15,6 +15,27 @@ endTime = toc;
 fprintf('Initialization Time: %.4f seconds\n', endTime);
 
 
+numElements = 8;
+elementSpacing = 0.014;
+array = phased.ULA('NumElements', numElements, 'ElementSpacing', elementSpacing);
+elementLocation = array.getElementPosition();
+load('CalibrationWeights.mat', 'calibrationweights');
+
+digitalsteer = digitalWeightsCalAdjustment([1;1], calibrationweights.DigitalWeights);
+
+azAngles = -60 : 5 : 60; 
+nAngles = length(azAngles);
+
+disp('Pre-computing phase lookup tables...');
+precomputedPhases = zeros(nAngles, 8);
+for i = 1:nAngles
+    steerweights = steervec(elementLocation / lambda, [azAngles(i); 0]);
+    steer_cols = [steerweights(1:4) steerweights(5:8)];
+    analogWeights = analogWeightsCalAdjustment(steer_cols, calibrationweights.AnalogWeights);
+    analog_flat = [analogWeights(:,1); analogWeights(:,2)].';
+    precomputedPhases(i, :) = mod(rad2deg(angle(analog_flat)), 360);
+end
+
 
 % --- 3. Main Loop ---
 t_start = tic;
@@ -23,6 +44,7 @@ clear detection_state;
 
 fprintf('Data Collection  |  Signal Processing  |  Dashboard Update  |  Total\n');
 
+%{
 while toc(t_start) < tCapture
     currentTime = toc(t_start);
     
@@ -52,6 +74,50 @@ while toc(t_start) < tCapture
     fprintf('D_Coll%.4f               %.4f              %.4f                %.4f', endTime1, endTime2, endTime3, totalTime);
     fprintf('\n');
     drawnow limitrate;
+
+lastZone = 0; % 0: Idle, 1: Red, 2: Yellow, 3: Green
+backgroundMask_dB=HeatMap_Collection(grid.rGridFull(grid.mask),nAngles,hw.bf,precomputedPhases,hw.rx,hw.bf_TDD,digitalsteer,hw.dsp.rdRaw,keepRange);
+%}
+while toc(t_start) < tCapture
+    currentTime = toc(t_start);
+
+    %Add Heatmap Collection
+    %{
+    currentHeatmap=HeatMap_Collection(grid.rGridFull(grid.mask),nAngles,hw.bf,precomputedPhases,hw.rx,hw.bf_TDD,digitalsteer,hw.dsp.rdRaw,keepRange);
+    diffHeat_dB = currentHeatmap - backgroundMask;
+    diffHeat_dB(diffHeat_dB < 0) = 0;
+    [detMapHeat, ~] = ca_cfar_filter(currentHeatmap, 1, 1, 3, 2, 1e-3);
+    if any(detMapHeat(:))
+        [~, linearIdx] = max(detMapHeat(:));
+        [maxRow, maxCol] = ind2sub(size(detMapHeat), linearIdx);
+        peakRange = validRanges(maxRow);
+        peakAngle = azAngles(maxCol);
+        
+        currentZone = categorizeZone(peakRange);
+        statusStr = sprintf('Target: %d° at %.2fm', peakAngle, peakRange);
+    else
+        currentZone = 0;
+        statusStr = 'SCANNING...';
+    end
+    %}
+    %Capture Doppler if significantly powerful target occurs
+    %if currentZone > 0 && currentZone ~= lastZone
+        % Get Data
+        data = eng.collect(hw, params);
+        if isempty(data), continue; end
+        
+        % Signal Processing
+        [magRaw, rGrid] = eng.processRaw(data, dsp.rdRaw, grid);
+        [targets, detMap, magMTI] = process_radar_data(data, dsp.rdFiltered, [1 -1], grid.mask, 5.0e-5);
+        
+        % Decision Logic for Safety State
+        [color, text] = detection_state(targets, magRaw, rGrid, currentTime);
+        
+        % Update Dashboard
+        gui.update(ui, grid.sGrid, rGrid, magRaw, magMTI, detMap, color, text);
+        
+        drawnow limitrate;
+    %end
 end
 
 
