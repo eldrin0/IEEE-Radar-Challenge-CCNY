@@ -22,7 +22,7 @@ elementLocation = array.getElementPosition();
 load('CalibrationWeights.mat', 'calibrationweights');
 
 digitalsteer = digitalWeightsCalAdjustment([1;1], calibrationweights.DigitalWeights);
-
+lambda = c / params.fc;
 azAngles = -60 : 5 : 60; 
 nAngles = length(azAngles);
 
@@ -78,6 +78,8 @@ while toc(t_start) < tCapture
 lastZone = 0; % 0: Idle, 1: Red, 2: Yellow, 3: Green
 backgroundMask_dB=HeatMap_Collection(grid.rGridFull(grid.mask),nAngles,hw.bf,precomputedPhases,hw.rx,hw.bf_TDD,digitalsteer,hw.dsp.rdRaw,keepRange);
 %}
+target_angle=30;
+steer(target_angle, hw, azAngles, precomputedPhases);
 while toc(t_start) < tCapture
     currentTime = toc(t_start);
 
