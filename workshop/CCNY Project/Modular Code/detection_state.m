@@ -12,7 +12,7 @@ function [color, txt, stateOut] = detection_state(targets, magRaw, rGrid, curren
     end
 
     % Parameters
-    persistenceDuration = 2.5; % Time to wait before going back to gray
+    persistenceDuration = 1; % Time to wait before going back to gray
     rawThresholdFactor = 1;  % Stationary sensitivity (IMPORTANT)
 
     if ~isempty(targets)
